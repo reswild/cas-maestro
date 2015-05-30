@@ -126,6 +126,7 @@ class CAS_Maestro {
  	 */
 	function init($run_cas=true) {
 		global $error;
+		global $pagenow;
 		if($run_cas) {
 			/**
 			 * phpCAS initialization
@@ -158,13 +159,15 @@ class CAS_Maestro {
 
 				/**
 				 * Filters and actions registration
-				 */		
+				 */
 				add_filter('authenticate', array(&$this, 'validate_login'), 30, 3);
 				add_filter('login_url', array(&$this, 'bypass_reauth'));
 				add_action('lost_password', array(&$this, 'disable_function'));
 				add_action('retrieve_password', array(&$this, 'disable_function'));
 				add_action('password_reset', array(&$this, 'disable_function'));
-				add_filter('show_password_fields', array(&$this, 'show_password_fields'));
+				if ($pagenow == 'profile.php') {
+					add_filter('show_password_fields', array(&$this, 'show_password_fields'), 999);
+				}
 			} else {
 				$error = __("wpCAS is not configured. Please, login, go to the settings and configure with your credentials.",
 			"CAS_Maestro");
