@@ -40,7 +40,6 @@ class CAS_Maestro {
 
 	public $settings;
 	public $network_settings;
-	public $phpcas_path;
 	public $allowed_users;
 
 	public $cas_configured = true;
@@ -69,9 +68,17 @@ class CAS_Maestro {
 			    'server_hostname' => 'yourschool.edu',
 			    'server_port' => '443',
 			    'server_path' => '',
+			    'cert_path' => '',
+			    'phpcas_path' => 'phpCAS/',
+			    'debug_path' => '',
+			    'redirect_url' => get_option('siteurl'),
 			    'e-mail_registration' => 1,
 			    'global_sender'=>get_bloginfo('admin_email'),
 			    'full_name' => '',
+			    //CAS attributes
+			    'cas_first_name' => '',
+			    'cas_last_name' => '',
+			    'cas_user_email' => '',
 			    //Welcome email
 			    'welcome_mail' => array(
 			    		'send_user'=>true,
@@ -88,6 +95,7 @@ class CAS_Maestro {
 			    		'user_body'=>'',
 			    		'global_body' => '',
 			    	),
+			    //LDAP Settings
 			    'ldap_protocol'=>'',
 			    'ldap_server'=>'',
 			    'ldap_username_rdn'=>'',
@@ -99,7 +107,6 @@ class CAS_Maestro {
 
  		//Get blog settings. If they doesn't exist, get the network settings.
  		$this->settings = get_option('wpCAS_settings',$this->network_settings);
- 		$this->phpcas_path = get_option('wpCAS_phpCAS_path',CAS_MAESTRO_PLUGIN_PATH.'phpCAS/CAS.php');
  		$this->allowed_users = get_option('wpCAS_allowed_users',array());	
  		$this->change_users_capability = 'edit_posts';
 
@@ -123,7 +130,7 @@ class CAS_Maestro {
 			/**
 			 * phpCAS initialization
 			 */
-			include_once($this->phpcas_path);
+			include_once($this->settings['phpcas_path'] . 'CAS.php');
 
 			if ($this->settings['server_hostname'] == '' ||
 			    intval($this->settings['server_port']) == 0)
@@ -136,17 +143,18 @@ class CAS_Maestro {
 					intval($this->settings['server_port']), 
 					$this->settings['server_path'],
 					false);
-				  
-				// function added in phpCAS v. 0.6.0
-				// checking for static method existance is frustrating in php4
-				$phpCas = new phpCas();
-				if (method_exists($phpCas, 'setNoCasServerValidation'))
-					phpCAS::setNoCasServerValidation();
-				unset($phpCas);
-				// if you want to set a cert, replace the above few lines	
 
-				if(defined('CAS_MAESTRO_DEBUG_ON') && CAS_MAESTRO_DEBUG_ON == true)
-					phpCAS::setDebug(CAS_MAESTRO_PLUGIN_PATH . 'debug.log');
+				// Check server certificate, if it is set
+				if ($this->settings['cert_path']) {
+				  phpCAS::setCasServerCACert($this->settings['cert_path']);
+				}
+				else {
+					phpCAS::setNoCasServerValidation();
+				}
+
+				if ($this->settings['debug_path']) {
+					phpCAS::setDebug($this->settings['debug_path']);
+				}
 
 				/**
 				 * Filters and actions registration
@@ -285,6 +293,22 @@ class CAS_Maestro {
 						}
 					}
 					break;
+					case 4: //Using CAS attributes
+          $cas_attributes = phpCAS::getAttributes();
+          if (isset($cas_attributes['first_name'])) {
+						$firstname = $cas_attributes['first_name'];
+					}
+					if (isset($cas_attributes['last_name'])) {
+						$lastname = $cas_attributes['last_name'];
+					}
+					if (isset($cas_attributes['mail'])) {
+						$user_email = $cas_attributes['mail'];
+					}
+					break;
+				  $cas_attributes = phpCAS::getAttributes();
+					if (isset($cas_attributes['mail'])) {
+						$user_email = $cas_attributes['mail'];
+					}
 				default: //No email predition
 					break;
 
@@ -373,11 +397,16 @@ class CAS_Maestro {
 		$not_using_cas =isset($_SESSION['not_using_CAS']) && $_SESSION['not_using_CAS'] == true;
 		session_destroy();
 
-		if( $not_using_cas )
+		if( $not_using_cas ) {
 			wp_redirect(home_url());
-		else
-		    phpCAS::logoutWithRedirectService(get_option('siteurl'));
-	    exit();
+		}
+		elseif( $this->settings['redirect_url'] ) {
+	    phpCAS::logoutWithRedirectService($this->settings['redirect_url']);
+    }
+    else {
+      phpCAS::logout();
+    }
+	  exit();
 	}	
 
 	/**
@@ -581,9 +610,18 @@ class CAS_Maestro {
 			$optionarray_update = array (
 				//CAS Settings				
 				'cas_version' => $_POST['cas_version'],
+				'phpcas_path' => $_POST['phpcas_path'],
 				'server_hostname' => $_POST['server_hostname'],
 				'server_port' => $_POST['server_port'],
 				'server_path' => $_POST['server_path'],
+				'cert_path' => $_POST['cert_path'],
+				'phpcas_path' => $_POST['phpcas_path'],
+			  'debug_path' => $_POST['debug_path'],
+			  'redirect_url' => $_POST['redirect_url'],
+				//CAS Attributes
+				'cas_first_name' => $_POST['cas_first_name'],
+				'cas_last_name' => $_POST['cas_last_name'],
+				'cas_user_email' => $_POST['cas_user_email'],
 				//LDAP Settings
 		    	'ldap_protocol'=>$_POST['ldap_protocol'],
 		    	'ldap_server'=>$_POST['ldap_server'],
