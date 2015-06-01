@@ -9,6 +9,7 @@ The changes so far are:
 - Added option for specifying path to CAS debug log file (or leave blank to disable logging)
 - Set password fields to only be removed from the profile page (but not from the 'Add New User' or 'Edit User' pages)
 - Updated phpCAS to version 1.3.3
+- Added option for CAS Protocol 3.0
 
 TODO:
 - Add support for using CAS attributes for any profile field

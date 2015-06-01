@@ -8,6 +8,7 @@
                     <th width="150px" scope="row"><label for="cas_version_inp"><?php _e('CAS version', 'CAS_Maestro'); ?></label></th>
                     <td>
                         <select name="cas_version" id="cas_version_inp" style="width: 100px;">
+                            <option value="3.0" <?php echo ($this->settings['cas_version'] == '3.0')?'selected':''; ?>>3.0</option>
                             <option value="2.0" <?php echo ($this->settings['cas_version'] == '2.0')?'selected':''; ?>>2.0</option>
                             <option value="1.0" <?php echo ($this->settings['cas_version'] == '1.0')?'selected':''; ?>>1.0</option>
                         </select>
